@@ -75,10 +75,11 @@ def aquire_partial(df_result, criteria_column, judge_ratio):
         df_reg_trial = df_reg_2nd.iloc[cut_row :,:]
         # print("Lowrow")
     else:
-        print("-----------------------")
-        print("If Not Meet R^2 Criteria")
-        print("Please Adjust Initial Ratio")
-        print("-----------------------")
+        st.markdown("-----------------------")
+        st.markdown("Not Meet R^2 Criteria")
+        st.markdown("Please Adjust Initial Ratio")
+        st.markdown("-----------------------")
+        df_reg_trial=pd.DataFrame()
     return df_reg_trial
 
 
@@ -140,7 +141,7 @@ if uploaded_csv is not None:
         low_stress_ratio = st.number_input('Low Stress Ratio', min_value=0.0, value=0.05, max_value=0.15, step=0.01)  
     with ratio_col2:
         st.markdown("#### **Choose upper ratio of max. stress**")
-        up_stress_ratio = st.number_input('Up Stress Ratio', min_value=0.7, value=0.9, max_value=0.96, step=0.05) 
+        up_stress_ratio = st.number_input('Up Stress Ratio', min_value=0.4, value=0.9, max_value=0.96, step=0.05) 
 
     st.markdown("----------------")  
 
@@ -153,30 +154,53 @@ if uploaded_csv is not None:
         re_run = st.number_input('Re-run', min_value=5, value=20, max_value=100, step=5) 
     with set_col3:
         st.markdown("###### $R^2$ Criteria")
-        r2_criteria = st.number_input('Min. Criteria:', min_value=0.985, value=0.990, max_value=0.999, step=0.001, format="%1f") 
+        r2_criteria = st.number_input('Min. Criteria:', min_value=0.95, value=0.990, max_value=0.999, step=0.001, format="%1f") 
 
     st.markdown("----------------")  
 
+    # select_list
+    test_type = st.selectbox("### Choose Test Type", ["3PT Bending", "Tensile"])
+
     dim_col1, dim_col2, dim_col3 = st.columns(3)
-    with dim_col1:
-        st.markdown("##### Specimen Span(L)")
-        L = st.number_input('mm', min_value=10.0, value=25.4)  
-    with dim_col2:
-        st.markdown("##### Specimen Width(b)")
-        b = st.number_input("mm", min_value=5.0, value=12.76) 
-    with dim_col3:
-        st.markdown("###### Specimen Thickness(d)")
-        d = st.number_input('mm', min_value=0.5, value=1.0) 
+    if test_type == "3PT Bending":
+        with dim_col1:
+            st.markdown("##### Specimen Span(L)")
+            L = st.number_input('mm', min_value=10.0, value=25.4)  
+        with dim_col2:
+            st.markdown("##### Specimen Width(b)")
+            b = st.number_input("mm", min_value=5.0, value=12.76) 
+        with dim_col3:
+            st.markdown("###### Specimen Thickness(d)")
+            d = st.number_input('mm', min_value=0.5, value=1.0) 
+    elif test_type == "Tensile":
+        with dim_col1:
+            st.markdown("##### Specimen Length(L)")
+            L = st.number_input('mm', min_value=10.0, value=50.0)  
+        with dim_col2:
+            st.markdown("##### Specimen Width(b)")
+            b = st.number_input("mm", min_value=5.0, value=25.4) 
+        with dim_col3:
+            st.markdown("###### Specimen Thickness(t)")
+            t = st.number_input('mm', min_value=0.5, value=1.5) 
     
     if st.button('Perform Analysis'):
     # For single file design
         df_stress = df_raw.copy()
+        
+        if test_type == "3PT Bending":
 
-        L2 = L**2
-        bd2 = b*d**2 
+            L2 = L**2
+            bd2 = b*d**2 
 
-        df_stress["Strain"] = 6 * (df_stress[deform] * d) / L2   
-        df_stress["Stress"] = 1.5 * (df_stress[force] * 9.81 * L) / bd2  
+            df_stress["Strain"] = 6 * (df_stress[deform] * d) / L2   
+            df_stress["Stress"] = 1.5 * (df_stress[force] * 9.81 * L) / bd2  
+        
+        elif test_type == "Tensile":
+
+            area = b*t
+            df_stress["Strain"] = df_stress[deform] / L   
+            df_stress["Stress"] = (df_stress[force] * 9.81 ) / area
+
 
         stress_max = df_stress["Stress"].max()
         stress_maxid = df_stress["Stress"].idxmax()
@@ -194,20 +218,25 @@ if uploaded_csv is not None:
         result, df_result, model = ols_reg(formula, df_modulus_reg)
 
         r2, modulus, p_val, intercept = summary_model(result)
+        # df_result
 
         for j in range(re_run):
             df_reg_trial = aquire_partial(df_result, "resid", judge_ratio)
-            result, df_result, model = ols_reg(formula, df_reg_trial)
-            r2, modulus, p_val, intercept = summary_model(result)
+            if df_reg_trial.shape[0] == 0:
+                break
+
+            else:
+                result, df_result, model = ols_reg(formula, df_reg_trial)
+                r2, modulus, p_val, intercept = summary_model(result)
        
             if r2 >= r2_criteria:
                break
 
         if r2 < r2_criteria:
-            print("            ")
-            print("-----------------------")
-            print("Already Reach Re-run Limitation")
-            print("Please Increase Re-run")
+            st.markdown("            ")
+            st.markdown("-----------------------")
+            st.markdown("Already Reach Re-run Limitation")
+            st.markdown("Please Increase Re-run")
 
         # df_yield, yield_stress, yield_strain, intercept_x = find_yield(df_result, df_modulus_reg, offset_strain)
 

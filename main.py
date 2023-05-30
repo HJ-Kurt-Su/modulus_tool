@@ -106,7 +106,7 @@ def figure_plot(df_stress, df_result):
 fig_size = [1280, 960]
 judge_ratio = 0.05
 
-st.title('3PT Bending Modulus Tool')
+st.title('Modulus Tool')
 
 
 # Provide dataframe example & relative url
@@ -170,7 +170,7 @@ if uploaded_csv is not None:
             st.markdown("##### Specimen Width(b)")
             b = st.number_input("mm", min_value=5.0, value=12.76) 
         with dim_col3:
-            st.markdown("###### Specimen Thickness(d)")
+            st.markdown("##### Specimen Thickness(d)")
             d = st.number_input('mm', min_value=0.5, value=1.0) 
     elif test_type == "Tensile":
         with dim_col1:
@@ -180,7 +180,7 @@ if uploaded_csv is not None:
             st.markdown("##### Specimen Width(b)")
             b = st.number_input("mm", min_value=5.0, value=25.4) 
         with dim_col3:
-            st.markdown("###### Specimen Thickness(t)")
+            st.markdown("##### Specimen Thickness(t)")
             t = st.number_input('mm', min_value=0.5, value=1.5) 
     
     if st.button('Perform Analysis'):
@@ -199,7 +199,7 @@ if uploaded_csv is not None:
 
             area = b*t
             df_stress["Strain"] = df_stress[deform] / L   
-            df_stress["Stress"] = (df_stress[force] * 9.81 ) / area
+            df_stress["Stress"] = (df_stress[force] * 1000 ) / area
 
 
         stress_max = df_stress["Stress"].max()

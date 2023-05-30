@@ -124,12 +124,13 @@ if uploaded_csv is not None:
     select_list = list(df_raw.columns)
     # select_list
     force = st.selectbox("### Choose Force(y)", select_list)
+    f_unit = st.selectbox("### Choose Force Unit", ["kgf", "kN", "N"])
 
     # response
     deform_list = select_list.copy()
     deform_list.remove(force)
     deform = st.selectbox(
-        "### Choose Deformation(x)", deform_list)
+        "### Choose Deformation(x), Unit:mm", deform_list)
     if not deform:
         st.error("Please select at least one factor.")
 
@@ -186,20 +187,28 @@ if uploaded_csv is not None:
     if st.button('Perform Analysis'):
     # For single file design
         df_stress = df_raw.copy()
+
         
+        if f_unit == "kN":
+            df_stress["Force_N"] = df_stress[force] * 1000
+        elif f_unit == "kgf":
+            df_stress["Force_N"] = df_stress[force] * 9.81
+        elif f_unit == "N":
+            df_stress["Force_N"] = df_stress[force]
+
         if test_type == "3PT Bending":
 
             L2 = L**2
             bd2 = b*d**2 
 
             df_stress["Strain"] = 6 * (df_stress[deform] * d) / L2   
-            df_stress["Stress"] = 1.5 * (df_stress[force] * 9.81 * L) / bd2  
+            df_stress["Stress"] = 1.5 * (df_stress["Force_N"] * L) / bd2  
         
         elif test_type == "Tensile":
 
             area = b*t
             df_stress["Strain"] = df_stress[deform] / L   
-            df_stress["Stress"] = (df_stress[force] * 1000 ) / area
+            df_stress["Stress"] = df_stress["Force_N"] / area
 
 
         stress_max = df_stress["Stress"].max()

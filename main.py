@@ -106,7 +106,7 @@ def figure_plot(df_stress, df_result):
 fig_size = [1280, 960]
 judge_ratio = 0.05
 
-st.title('Modulus Tool')
+st.title('Modulus (Slope) Tool')
 
 
 # Provide dataframe example & relative url
@@ -136,131 +136,147 @@ if uploaded_csv is not None:
 
     st.markdown("----------------")  
 
-    ratio_col1, ratio_col2 = st.columns(2)
-    with ratio_col1:
-        st.markdown("#### **Choose lower ratio of max. stress**")
-        low_stress_ratio = st.number_input('Low Stress Ratio', min_value=0.0, value=0.05, max_value=0.15, step=0.01)  
-    with ratio_col2:
-        st.markdown("#### **Choose upper ratio of max. stress**")
-        up_stress_ratio = st.number_input('Up Stress Ratio', min_value=0.4, value=0.9, max_value=0.96, step=0.05) 
+ratio_col1, ratio_col2 = st.columns(2)
+with ratio_col1:
+    st.markdown("#### **Choose lower ratio of max. stress**")
+    low_stress_ratio = st.number_input('Low Stress Ratio', min_value=0.0, value=0.05, max_value=0.15, step=0.01)  
+with ratio_col2:
+    st.markdown("#### **Choose upper ratio of max. stress**")
+    up_stress_ratio = st.number_input('Up Stress Ratio', min_value=0.4, value=0.9, max_value=0.96, step=0.05) 
 
-    st.markdown("----------------")  
+st.markdown("----------------")  
 
-    set_col1, set_col2, set_col3 = st.columns(3)
-    with set_col1:
-        st.markdown("##### Drop portion each reg.")
-        cut_ratio = st.number_input('Cut Ratio', min_value=0.0, value=0.05, max_value=0.10, step=0.01)  
-    with set_col2:
-        st.markdown("##### Max. Re-run times")
-        re_run = st.number_input('Re-run', min_value=5, value=20, max_value=100, step=5) 
-    with set_col3:
-        st.markdown("###### $R^2$ Criteria")
-        r2_criteria = st.number_input('Min. Criteria:', min_value=0.95, value=0.990, max_value=0.999, step=0.001, format="%1f") 
+set_col1, set_col2, set_col3 = st.columns(3)
+with set_col1:
+    st.markdown("##### Drop portion each reg.")
+    cut_ratio = st.number_input('Cut Ratio', min_value=0.0, value=0.05, max_value=0.10, step=0.01)  
+with set_col2:
+    st.markdown("##### Max. Re-run times")
+    re_run = st.number_input('Re-run', min_value=5, value=20, max_value=100, step=5) 
+with set_col3:
+    st.markdown("###### $R^2$ Criteria")
+    r2_criteria = st.number_input('Min. Criteria:', min_value=0.95, value=0.990, max_value=0.999, step=0.001, format="%1f") 
 
-    st.markdown("----------------")  
+st.markdown("----------------")  
 
-    # select_list
-    test_type = st.selectbox("### Choose Test Type", ["3PT Bending", "Tensile"])
+# select_list
+test_type = st.selectbox("### Choose Test Type", ["3PT Bending", "Tensile", "Slope Only"])
 
-    dim_col1, dim_col2, dim_col3 = st.columns(3)
-    if test_type == "3PT Bending":
-        with dim_col1:
-            st.markdown("##### Specimen Span(L)")
-            L = st.number_input('mm', min_value=10.0, value=25.4)  
-        with dim_col2:
-            st.markdown("##### Specimen Width(b)")
-            b = st.number_input("mm", min_value=5.0, value=12.76) 
-        with dim_col3:
-            st.markdown("##### Specimen Thickness(d)")
-            d = st.number_input('mm', min_value=0.5, value=1.0) 
-    elif test_type == "Tensile":
-        with dim_col1:
-            st.markdown("##### Specimen Length(L)")
-            L = st.number_input('mm', min_value=10.0, value=50.0)  
-        with dim_col2:
-            st.markdown("##### Specimen Width(b)")
-            b = st.number_input("mm", min_value=5.0, value=25.4) 
-        with dim_col3:
-            st.markdown("##### Specimen Thickness(t)")
-            t = st.number_input('mm', min_value=0.5, value=1.5) 
+dim_col1, dim_col2, dim_col3 = st.columns(3)
+if test_type == "3PT Bending":
+    with dim_col1:
+        st.markdown("##### Specimen Span(L)")
+        L = st.number_input('mm', min_value=10.0, value=25.4)  
+    with dim_col2:
+        st.markdown("##### Specimen Width(b)")
+        b = st.number_input("mm", min_value=5.0, value=12.76) 
+    with dim_col3:
+        st.markdown("##### Specimen Thickness(d)")
+        d = st.number_input('mm', min_value=0.5, value=1.0) 
+elif test_type == "Tensile":
+    with dim_col1:
+        st.markdown("##### Specimen Length(L)")
+        L = st.number_input('mm', min_value=10.0, value=50.0)  
+    with dim_col2:
+        st.markdown("##### Specimen Width(b)")
+        b = st.number_input("mm", min_value=5.0, value=25.4) 
+    with dim_col3:
+        st.markdown("##### Specimen Thickness(t)")
+        t = st.number_input('mm', min_value=0.5, value=1.5) 
+
+if st.button('Perform Analysis'):
+# For single file design
+    df_stress = df_raw.copy()
+
     
-    if st.button('Perform Analysis'):
-    # For single file design
-        df_stress = df_raw.copy()
+    if f_unit == "kN":
+        df_stress["Force_N"] = df_stress[force] * 1000
+    elif f_unit == "kgf":
+        df_stress["Force_N"] = df_stress[force] * 9.81
+    elif f_unit == "N":
+        df_stress["Force_N"] = df_stress[force]
 
-        
-        if f_unit == "kN":
-            df_stress["Force_N"] = df_stress[force] * 1000
-        elif f_unit == "kgf":
-            df_stress["Force_N"] = df_stress[force] * 9.81
-        elif f_unit == "N":
-            df_stress["Force_N"] = df_stress[force]
+    if test_type == "3PT Bending":
 
-        if test_type == "3PT Bending":
+        L2 = L**2
+        bd2 = b*d**2 
 
-            L2 = L**2
-            bd2 = b*d**2 
+        df_stress["Strain"] = 6 * (df_stress[deform] * d) / L2   
+        df_stress["Stress"] = 1.5 * (df_stress["Force_N"] * L) / bd2  
+    
+    elif test_type == "Tensile":
 
-            df_stress["Strain"] = 6 * (df_stress[deform] * d) / L2   
-            df_stress["Stress"] = 1.5 * (df_stress["Force_N"] * L) / bd2  
-        
-        elif test_type == "Tensile":
+        area = b*t
+        df_stress["Strain"] = df_stress[deform] / L   
+        df_stress["Stress"] = df_stress["Force_N"] / area
 
-            area = b*t
-            df_stress["Strain"] = df_stress[deform] / L   
-            df_stress["Stress"] = df_stress["Force_N"] / area
+    elif test_type == "Slope Only":
+
+        df_stress["Strain"] = df_stress[deform]   
+        df_stress["Stress"] = df_stress["Force_N"]
 
 
-        stress_max = df_stress["Stress"].max()
-        stress_maxid = df_stress["Stress"].idxmax()
+    stress_max = df_stress["Stress"].max()
+    stress_maxid = df_stress["Stress"].idxmax()
 
-        up_filter_stress = up_stress_ratio * stress_max
-        low_filter_stress = low_stress_ratio * stress_max     
+    up_filter_stress = up_stress_ratio * stress_max
+    low_filter_stress = low_stress_ratio * stress_max     
 
-        df_modulus_reg = df_stress[(df_stress.index < stress_maxid) & 
-                        (df_stress["Stress"] <= up_filter_stress) & 
-                        (df_stress["Stress"] >= low_filter_stress)
-                        ]
-        
-        formula = "Stress ~ Strain"
+    df_modulus_reg = df_stress[(df_stress.index < stress_maxid) & 
+                    (df_stress["Stress"] <= up_filter_stress) & 
+                    (df_stress["Stress"] >= low_filter_stress)
+                    ]
+    
+    formula = "Stress ~ Strain"
 
-        result, df_result, model = ols_reg(formula, df_modulus_reg)
+    result, df_result, model = ols_reg(formula, df_modulus_reg)
 
-        r2, modulus, p_val, intercept = summary_model(result)
-        # df_result
+    r2, modulus, p_val, intercept = summary_model(result)
+    # df_result
 
-        for j in range(re_run):
-            df_reg_trial = aquire_partial(df_result, "resid", judge_ratio)
-            if df_reg_trial.shape[0] == 0:
-                break
+    for j in range(re_run):
+        df_reg_trial = aquire_partial(df_result, "resid", judge_ratio)
+        if df_reg_trial.shape[0] == 0:
+            break
 
-            else:
-                result, df_result, model = ols_reg(formula, df_reg_trial)
-                r2, modulus, p_val, intercept = summary_model(result)
-       
-            if r2 >= r2_criteria:
-               break
+        else:
+            result, df_result, model = ols_reg(formula, df_reg_trial)
+            r2, modulus, p_val, intercept = summary_model(result)
+    
+        if r2 >= r2_criteria:
+            break
 
-        if r2 < r2_criteria:
-            st.markdown("            ")
-            st.markdown("-----------------------")
-            st.markdown("Already Reach Re-run Limitation")
-            st.markdown("Please Increase Re-run")
-
-        # df_yield, yield_stress, yield_strain, intercept_x = find_yield(df_result, df_modulus_reg, offset_strain)
-
-        st.markdown("                ")
+    if r2 < r2_criteria:
+        st.markdown("            ")
         st.markdown("-----------------------")
-        st.markdown("#### Intercept: %s" % intercept)
-        st.markdown("#### Modulus: %s" % modulus)
-        st.markdown("P Value: %s" % p_val)
-        st.markdown("Adjust $R^2$ is: %s" % r2)
-        st.markdown("-----------------------")
+        st.markdown("Already Reach Re-run Limitation")
+        st.markdown("Please Increase Re-run")
 
-        fig_line, fig_reg_line = figure_plot(df_stress, df_result)
-        fig_interact = go.Figure(data=fig_line.data + 
-                  fig_reg_line.data 
-                  )
+    # df_yield, yield_stress, yield_strain, intercept_x = find_yield(df_result, df_modulus_reg, offset_strain)
+
+    st.markdown("                ")
+    st.markdown("-----------------------")
+    st.markdown("#### Intercept: %s" % intercept)
+    st.markdown("#### Modulus: %s" % modulus)
+    st.markdown("P Value: %s" % p_val)
+    st.markdown("Adjust $R^2$ is: %s" % r2)
+    st.markdown("-----------------------")
+
+    fig_line, fig_reg_line = figure_plot(df_stress, df_result)
+    fig_interact = go.Figure(data=fig_line.data + 
+                fig_reg_line.data 
+                )
+    if test_type == "Slope Only":
+            
+            fig_interact.update_layout(
+                autosize=False,
+                width=fig_size[0],
+                height=fig_size[1],
+                xaxis_title=deform,
+                yaxis_title=force,
+                title="Strian vs. Stress")
+    else:
+
         fig_interact.update_layout(
                 autosize=False,
                 width=fig_size[0],
@@ -268,4 +284,4 @@ if uploaded_csv is not None:
                 xaxis_title="Strain",
                 yaxis_title="Stress(MPa)",
                 title="Strian vs. Stress")
-        st.plotly_chart(fig_interact, use_container_width=True)
+    st.plotly_chart(fig_interact, use_container_width=True)

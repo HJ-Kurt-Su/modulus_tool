@@ -4,7 +4,7 @@ import itertools
 
 import datetime
 import numpy as np
-# import io
+import io
 import statsmodels.formula.api as smf
 from scipy.stats import shapiro
 # from statsmodels.graphics.gofplots import qqplot
@@ -103,16 +103,25 @@ def figure_plot(df_stress, df_result):
 ## Program Start:
 
 ## Not change parameter
-fig_size = [1280, 960]
+# fig_size = [1280, 960]
 judge_ratio = 0.05
 
 st.title('Modulus (Slope) Tool')
+
+st.markdown("#### Author & License:")
+
+st.markdown("**Kurt Su** (phononobserver@gmail.com)")
+
+st.markdown("**This tool release under [CC BY-NC-SA](https://creativecommons.org/licenses/by-nc-sa/4.0/) license**")
+
+st.markdown("               ")
+st.markdown("               ")
 
 
 # Provide dataframe example & relative url
 data_ex_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzc-xaGomUO81MiJ7lyQ__FhbPIGK4YTvUjoE76BglXWj2XLIqSc-9-Mrlq9P2iuYeqRhgRJTgn1QW/pub?gid=0&single=true&output=csv"
 # st.write("Factor Format Example File [link](%s)" % factor_ex_url)
-st.markdown("#### Data Format Example File [Demo File](%s)" % data_ex_url)
+st.markdown("### **Data Format Example File [Demo File](%s)**" % data_ex_url)
 
 uploaded_csv = st.file_uploader('#### 選擇您要上傳的CSV檔')
 
@@ -130,7 +139,7 @@ if uploaded_csv is not None:
     deform_list = select_list.copy()
     deform_list.remove(force)
     deform = st.selectbox(
-        "### Choose Deformation(x), Unit:mm", deform_list)
+        "### Choose Deformation(x), (Unit-mm)", deform_list)
     if not deform:
         st.error("Please select at least one factor.")
 
@@ -184,7 +193,14 @@ elif test_type == "Tensile":
         st.markdown("##### Specimen Thickness(t)")
         t = st.number_input('mm', min_value=0.5, value=1.5) 
 
-if st.button('Perform Analysis'):
+size_col1, size_col2 = st.columns(2)
+with size_col1:
+    fig_width = st.number_input('Figure Width', min_value=640, value=1280, max_value=5120, step=320) 
+    
+with size_col2:
+    fig_height = st.number_input('Figure Height', min_value=480, value=960, max_value=3840, step=240) 
+
+if st.checkbox('Perform Analysis'):
 # For single file design
     df_stress = df_raw.copy()
 
@@ -270,18 +286,31 @@ if st.button('Perform Analysis'):
             
             fig_interact.update_layout(
                 autosize=False,
-                width=fig_size[0],
-                height=fig_size[1],
+                width=fig_width,
+                height=fig_height,
                 xaxis_title=deform,
                 yaxis_title=force,
-                title="Strian vs. Stress")
+                title= force + " vs. " + deform)
     else:
 
         fig_interact.update_layout(
                 autosize=False,
-                width=fig_size[0],
-                height=fig_size[1],
+                width=fig_width,
+                height=fig_height,
                 xaxis_title="Strain",
                 yaxis_title="Stress(MPa)",
                 title="Strian vs. Stress")
     st.plotly_chart(fig_interact, use_container_width=True)
+
+    date = str(datetime.datetime.now()).split(" ")[0]
+    mybuff = io.StringIO()
+    fig_file_name = date + "_" + test_type + ".html"
+    # fig_html = fig_pair.write_html(fig_file_name)
+    fig_interact.write_html(mybuff, include_plotlyjs='cdn')
+    html_bytes = mybuff.getvalue().encode()
+
+    st.download_button(label="Download figure",
+                        data=html_bytes,
+                        file_name=fig_file_name,
+                        mime='text/html'
+                        )
